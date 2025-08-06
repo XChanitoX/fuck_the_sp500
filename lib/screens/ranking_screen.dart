@@ -40,13 +40,18 @@ class _RankingScreenState extends State<RankingScreen>
     }
 
     try {
-      final loadedStocks = await StockService.fetchStocks();
+      // Primero probar la conexión a la API
+      await StockService.testApiConnection();
+
+      // Usar datos reales en lugar de mock
+      final loadedStocks = await StockService.fetchRealTimeStocks();
       setState(() {
         stocks = loadedStocks;
         isLoading = false;
         isRefreshing = false;
       });
     } catch (e) {
+      print('❌ Error en _loadStocks: $e');
       setState(() {
         isLoading = false;
         isRefreshing = false;
@@ -117,13 +122,13 @@ class _RankingScreenState extends State<RankingScreen>
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       child: Column(
         children: [
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
@@ -131,15 +136,15 @@ class _RankingScreenState extends State<RankingScreen>
                       Colors.purple.withOpacity(0.8),
                     ],
                   ),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
                   Icons.trending_up,
                   color: Colors.white,
-                  size: 24,
+                  size: 20,
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -148,7 +153,7 @@ class _RankingScreenState extends State<RankingScreen>
                       'Top Stocks',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 28,
+                        fontSize: 24,
                         fontWeight: FontWeight.bold,
                         fontFamily: 'Roboto',
                       ),
@@ -157,7 +162,7 @@ class _RankingScreenState extends State<RankingScreen>
                       'Ranking de las mejores acciones',
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.7),
-                        fontSize: 16,
+                        fontSize: 14,
                         fontFamily: 'Roboto',
                       ),
                     ),
@@ -174,11 +179,11 @@ class _RankingScreenState extends State<RankingScreen>
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               gradient: LinearGradient(
                 colors: [
                   Colors.white.withOpacity(0.1),
@@ -203,7 +208,7 @@ class _RankingScreenState extends State<RankingScreen>
                     'Análisis impulsado por IA',
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.9),
-                      fontSize: 16,
+                      fontSize: 14,
                       fontWeight: FontWeight.w600,
                       fontFamily: 'Roboto',
                     ),
@@ -247,7 +252,7 @@ class _RankingScreenState extends State<RankingScreen>
   Widget _buildFilterChips() {
     return Container(
       height: 50,
-      margin: const EdgeInsets.symmetric(horizontal: 20),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: filters.length,
@@ -265,7 +270,7 @@ class _RankingScreenState extends State<RankingScreen>
               },
               child: Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(25),
                   gradient: isSelected
@@ -290,7 +295,7 @@ class _RankingScreenState extends State<RankingScreen>
                     color: isSelected
                         ? Colors.white
                         : Colors.white.withOpacity(0.8),
-                    fontSize: 14,
+                    fontSize: 13,
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                     fontFamily: 'Roboto',
                   ),

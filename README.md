@@ -1,179 +1,189 @@
-# Top Stocks - Ranking de Acciones con IA
+# 🚀 Fuck The SP500 - App de Recomendaciones de Acciones
 
-Una aplicación móvil elegante desarrollada en Flutter que presenta un ranking de las mejores acciones del mercado americano, con análisis impulsado por inteligencia artificial.
+Una aplicación Flutter moderna para mostrar recomendaciones de acciones del mercado americano con datos en tiempo real, análisis de IA y logos de empresas.
 
-## 🎨 Características de Diseño
+## ✨ Características
 
-- **Diseño Glass**: Efecto de cristal esmerilado estilo iPhone con transparencias y blur
-- **Tema Oscuro**: Paleta de colores elegante con gradientes oscuros
-- **Animaciones Fluidas**: Transiciones suaves y efectos visuales modernos
-- **UX/UI Premium**: Interfaz intuitiva con la mejor experiencia de usuario
+- 📊 **Datos en Tiempo Real**: Precios actuales del mercado americano
+- 🎯 **Análisis de IA**: Recomendaciones inteligentes basadas en datos del mercado
+- 🏢 **Logos de Empresas**: Logos oficiales de las empresas más importantes
+- 📱 **UI Moderna**: Interfaz elegante con efectos glassmorphism
+- 🔄 **Actualización en Vivo**: Pull-to-refresh para datos actualizados
+- 📈 **Filtros por Sector**: Filtra acciones por sector económico
+- 💰 **Información Fundamental**: P/E ratio, dividend yield, market cap
 
-## 🚀 Funcionalidades
+## 🛠️ Configuración de APIs
 
-### Pantalla Principal (Ranking)
+### 1. Yahoo Finance API (Actualmente en uso - Gratuita)
 
-- **Lista de Acciones**: Ranking de las top acciones con información detallada
-- **Filtros por Sector**: Filtrado dinámico por sector (Tecnología, Finanzas, etc.)
-- **Pull to Refresh**: Actualización de datos con gesto de deslizar
-- **Loading States**: Estados de carga con shimmer effects elegantes
+La app ahora usa **Yahoo Finance API** que es completamente gratuita y no requiere API key:
 
-### Tarjetas de Acción
+- ✅ **Sin límites de requests**
+- ✅ **Datos en tiempo real**
+- ✅ **No requiere registro**
+- ✅ **Información de precios actualizada**
 
-- **Información Completa**: Símbolo, empresa, precio, cambio, ranking
-- **Indicadores Visuales**: Colores para cambios positivos/negativos
-- **Métricas Clave**: P/E Ratio, Dividend Yield, Sector
-- **Análisis IA**: Explicación de por qué es una buena opción de compra
+### 2. Alpha Vantage API (Alternativa)
 
-### Pantalla de Detalle
+Si prefieres usar Alpha Vantage:
 
-- **Vista Expandida**: Información completa de la acción seleccionada
-- **Análisis Técnico**: Indicadores y métricas avanzadas
-- **Análisis Fundamental**: Datos financieros y ratios
-- **Recomendaciones IA**: Sugerencias de compra/venta/mantener
+1. Ve a [Alpha Vantage](https://www.alphavantage.co/)
+2. Regístrate para obtener una API key gratuita
+3. Abre `lib/config/api_config.dart`
+4. Reemplaza `'TU_API_KEY_AQUI'` con tu API key real
 
-## 🛠 Tecnologías Utilizadas
-
-- **Flutter**: Framework de desarrollo móvil
-- **Dart**: Lenguaje de programación
-- **HTTP**: Cliente para APIs REST
-- **Shared Preferences**: Almacenamiento local
-- **Flutter Animate**: Animaciones avanzadas
-- **Shimmer**: Efectos de carga
-- **Intl**: Formateo de números y fechas
-
-## 📱 Arquitectura
-
-```text
-lib/
-├── main.dart                 # Punto de entrada de la aplicación
-├── models/
-│   └── stock.dart           # Modelo de datos para acciones
-├── services/
-│   └── stock_service.dart   # Servicio para manejo de datos
-├── screens/
-│   ├── ranking_screen.dart  # Pantalla principal del ranking
-│   └── stock_detail_screen.dart # Pantalla de detalle
-└── widgets/
-    ├── stock_card.dart      # Widget de tarjeta de acción
-    └── stock_shimmer.dart   # Widget de loading
+```dart
+static const String alphaVantageApiKey = 'TU_API_KEY_REAL_AQUI';
 ```
 
-## 🎯 Características Técnicas
+**Plan Gratuito**: 25 requests/día (no 500 como antes), datos en tiempo real
 
-### Diseño Glass
+### 2. Alternativas de APIs
 
-- Efectos de transparencia con `BackdropFilter`
-- Gradientes sutiles para profundidad visual
-- Bordes con opacidad para efecto cristal
-- Sombras para elevación
+#### Yahoo Finance API
+- **URL**: https://rapidapi.com/apidojo/api/yahoo-finance1/
+- **Ventajas**: Datos gratuitos, muy completa, incluye logos
+- **Configuración**: Agregar API key en `api_config.dart`
 
-### Animaciones
+#### Finnhub API
+- **URL**: https://finnhub.io/
+- **Ventajas**: API robusta, websockets, datos profesionales
+- **Plan Gratuito**: 60 requests/minuto
 
-- Entrada escalonada de elementos
-- Transiciones suaves entre pantallas
-- Efectos de hover y tap
-- Animaciones de carga
+#### IEX Cloud API
+- **URL**: https://iexcloud.io/
+- **Ventajas**: Datos de alta calidad, bien documentada
+- **Plan Gratuito**: 50,000 requests/mes
 
-### Estado de la Aplicación
+### 3. Logos de Empresas
 
-- Gestión de estado con `StatefulWidget`
-- Carga asíncrona de datos
-- Manejo de errores elegante
-- Estados de loading optimizados
+La app usa **Clearbit Logo API** para mostrar logos oficiales:
+- **URL**: `https://logo.clearbit.com/{domain}`
+- **Ejemplo**: `https://logo.clearbit.com/apple.com`
+- **Configuración**: Automática, no requiere API key
 
-## 🔌 Integración con Backend
+## 🚀 Instalación
 
-La aplicación está preparada para conectarse con un backend que proporcione:
+1. **Clona el repositorio**
+```bash
+git clone <tu-repositorio>
+cd fuck_the_sp500
+```
 
-### Endpoints Esperados
+2. **Instala las dependencias**
+```bash
+flutter pub get
+```
 
-- `GET /api/stocks` - Lista de acciones rankeadas
-- `GET /api/stocks/{symbol}/analysis` - Análisis detallado por acción
+3. **Configuración (Opcional)**
+- La app usa Yahoo Finance por defecto (no requiere configuración)
+- Si quieres usar Alpha Vantage, abre `lib/config/api_config.dart` y reemplaza `'TU_API_KEY_AQUI'` con tu API key
 
-### Formato de Datos
+4. **Ejecuta la app**
+```bash
+flutter run
+```
 
-```json
-{
-  "symbol": "AAPL",
-  "companyName": "Apple Inc.",
-  "currentPrice": 175.43,
-  "change": 2.15,
-  "changePercent": 1.24,
-  "marketCap": 2750000000000,
-  "volume": 45678900,
-  "rank": 1,
-  "aiAnalysis": "Análisis de IA...",
-  "recommendation": "COMPRAR",
-  "targetPrice": 185.00,
-  "sector": "Tecnología",
-  "peRatio": 28.5,
-  "dividendYield": 0.5
+## 📱 Uso
+
+1. **Pantalla Principal**: Muestra el ranking de acciones recomendadas
+2. **Filtros**: Usa los chips para filtrar por sector
+3. **Pull to Refresh**: Desliza hacia abajo para actualizar datos
+4. **Detalles**: Toca una acción para ver análisis detallado
+
+## 🏗️ Estructura del Proyecto
+
+```
+lib/
+├── config/
+│   └── api_config.dart          # Configuración de APIs
+├── models/
+│   └── stock.dart               # Modelo de datos de acciones
+├── screens/
+│   ├── ranking_screen.dart      # Pantalla principal
+│   └── stock_detail_screen.dart # Detalles de acción
+├── services/
+│   └── stock_service.dart       # Servicios de API
+├── widgets/
+│   ├── stock_card.dart          # Tarjeta de acción
+│   └── stock_shimmer.dart       # Loading placeholder
+└── main.dart                    # Punto de entrada
+```
+
+## 🔧 Configuración Avanzada
+
+### Cambiar Proveedor de API
+
+Para usar una API diferente, modifica `StockService`:
+
+```dart
+// En lib/services/stock_service.dart
+static Future<Map<String, dynamic>?> getRealTimeQuote(String symbol) async {
+  // Cambiar URL y parámetros según la API elegida
+  final response = await http.get(
+    Uri.parse('${ApiConfig.yahooFinanceBaseUrl}/$symbol'),
+    headers: {'X-RapidAPI-Key': 'TU_API_KEY'},
+  );
+  // Procesar respuesta según formato de la API
 }
 ```
 
-## 🚀 Instalación y Ejecución
+### Agregar Nuevas Acciones
 
-1. **Clonar el repositorio**
+1. Agrega el símbolo en `ApiConfig.popularSymbols`
+2. Agrega el dominio en `ApiConfig.symbolToDomain`
+3. La app automáticamente incluirá la nueva acción
 
-   ```bash
-   git clone <repository-url>
-   cd fuck_the_sp500
-   ```
+### Personalizar Análisis de IA
 
-2. **Instalar dependencias**
+Modifica `_generateAIAnalysis()` en `StockService` para personalizar las recomendaciones:
 
-   ```bash
-   flutter pub get
-   ```
-
-3. **Ejecutar la aplicación**
-
-   ```bash
-   flutter run
-   ```
-
-## 📦 Dependencias
-
-```yaml
-dependencies:
-  flutter:
-    sdk: flutter
-  http: ^1.1.0
-  shared_preferences: ^2.2.2
-  flutter_animate: ^4.2.0+1
-  glassmorphism: ^3.0.0
-  cupertino_icons: ^1.0.2
-  intl: ^0.18.1
-  shimmer: ^3.0.0
+```dart
+static String _generateAIAnalysis(String symbol, Map<String, dynamic>? overviewData) {
+  // Tu lógica personalizada aquí
+  return 'Análisis personalizado para $symbol';
+}
 ```
 
-## 🎨 Paleta de Colores
+## 📊 Datos Disponibles
 
-- **Fondo Principal**: `#0A0A0A`
-- **Fondo Secundario**: `#1A1A2E`
-- **Acento Azul**: `#4A90E2`
-- **Acento Púrpura**: `#9B59B6`
-- **Verde Positivo**: `#4CAF50`
-- **Rojo Negativo**: `#F44336`
+### Información en Tiempo Real
+- Precio actual
+- Cambio diario
+- Porcentaje de cambio
+- Volumen
+- Máximo/Mínimo del día
 
-## 📱 Compatibilidad
+### Información Fundamental
+- Nombre de la empresa
+- Sector e industria
+- Capitalización de mercado
+- Ratio P/E
+- Dividend yield
+- Descripción de la empresa
 
-- **iOS**: 12.0+
-- **Android**: API 21+
-- **Flutter**: 3.5.4+
+## 🎨 Personalización
 
-## 🔮 Próximas Características
+### Temas
+- Modifica `lib/main.dart` para cambiar colores y estilos
+- La app usa un tema oscuro moderno por defecto
 
-- [ ] Gráficos interactivos de precios
-- [ ] Notificaciones push para cambios importantes
-- [ ] Modo offline con caché local
-- [ ] Favoritos y watchlist personal
-- [ ] Comparación de acciones
-- [ ] Alertas de precio
-- [ ] Integración con brokers
+### Animaciones
+- Usa `flutter_animate` para personalizar animaciones
+- Modifica duraciones y curvas en los widgets
 
-## 🤝 Contribución
+## 🚨 Limitaciones
+
+### Alpha Vantage Free Tier
+- 500 requests/día
+- La app limita a 5 acciones por carga para respetar límites
+- Considera actualizar a plan premium para más datos
+
+### Logos
+- Algunos logos pueden no cargar si el dominio no existe
+- La app muestra fallback con inicial de la empresa
+
+## 🤝 Contribuir
 
 1. Fork el proyecto
 2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
@@ -185,10 +195,25 @@ dependencies:
 
 Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para detalles.
 
-## 📞 Contacto
+## 🆘 Soporte
 
-Para preguntas o soporte, contacta al equipo de desarrollo.
+Si tienes problemas:
+
+1. Verifica que tu API key sea válida
+2. Revisa los límites de tu plan de API
+3. Asegúrate de tener conexión a internet
+4. Revisa la consola para errores específicos
+
+## 🔮 Próximas Características
+
+- [ ] Gráficos de precios históricos
+- [ ] Alertas de precio
+- [ ] Portfolio personal
+- [ ] Noticias de mercado
+- [ ] Análisis técnico avanzado
+- [ ] Exportar datos
+- [ ] Modo offline
 
 ---
 
-## Desarrollado con ❤️ usando Flutter
+**¡Disfruta analizando el mercado! 📈**

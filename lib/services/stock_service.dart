@@ -1,11 +1,292 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/stock.dart';
+import '../config/api_config.dart';
 
 class StockService {
-  static const String baseUrl = 'https://api.example.com'; // Cambiar por tu backend real
-  
-  // Datos de ejemplo para desarrollo
+  // Obtener URL del logo de una empresa
+  static String getLogoUrl(String symbol) {
+    final domain = ApiConfig.symbolToDomain[symbol];
+    if (domain != null) {
+      return '${ApiConfig.clearbitLogoBaseUrl}/$domain';
+    }
+    // Fallback: intentar con el símbolo como dominio
+    return '${ApiConfig.clearbitLogoBaseUrl}/$symbol.com';
+  }
+
+  // Obtener datos en tiempo real usando Yahoo Finance (gratuito)
+  static Future<Map<String, dynamic>?> getRealTimeQuote(String symbol) async {
+    try {
+      final url =
+          '${ApiConfig.yahooFinanceBaseUrl}/$symbol?interval=1d&range=1d';
+      print('🔍 Haciendo request a Yahoo Finance: $url');
+
+      final response = await http.get(Uri.parse(url));
+
+      print('📊 Status code: ${response.statusCode}');
+      print('📄 Respuesta completa de Yahoo Finance: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['chart'] != null &&
+            data['chart']['result'] != null &&
+            data['chart']['result'].isNotEmpty) {
+          final result = data['chart']['result'][0];
+          final meta = result['meta'];
+          final indicators = result['indicators'];
+          final quote = indicators['quote'][0];
+
+          final currentPrice = meta['regularMarketPrice']?.toDouble() ?? 0.0;
+          final previousClose = meta['chartPreviousClose']?.toDouble() ?? 0.0;
+          final change = currentPrice - previousClose;
+          final changePercent =
+              previousClose > 0 ? (change / previousClose) * 100 : 0.0;
+
+          final resultData = {
+            'symbol': symbol,
+            'currentPrice': currentPrice,
+            'change': change,
+            'changePercent': changePercent,
+            'volume': quote['volume']?.last?.toDouble() ?? 0.0,
+            'previousClose': previousClose,
+            'open': quote['open']?.last?.toDouble() ?? 0.0,
+            'high': quote['high']?.last?.toDouble() ?? 0.0,
+            'low': quote['low']?.last?.toDouble() ?? 0.0,
+            'fiftyTwoWeekHigh': meta['fiftyTwoWeekHigh']?.toDouble() ?? 0.0,
+            'fiftyTwoWeekLow': meta['fiftyTwoWeekLow']?.toDouble() ?? 0.0,
+          };
+
+          print('✅ Datos procesados para $symbol: $resultData');
+          return resultData;
+        } else {
+          print('❌ No se encontraron datos de quote para $symbol');
+        }
+      } else {
+        print('❌ Error HTTP: ${response.statusCode}');
+      }
+      return null;
+    } catch (e) {
+      print('❌ Error obteniendo datos de $symbol: $e');
+      return null;
+    }
+  }
+
+  // Obtener información fundamental de la empresa (datos mock por ahora)
+  static Future<Map<String, dynamic>?> getCompanyOverview(String symbol) async {
+    try {
+      // Por ahora usamos datos mock para la información fundamental
+      // En el futuro podríamos usar Yahoo Finance o otra API
+      final companyData = {
+        'AAPL': {
+          'companyName': 'Apple Inc.',
+          'sector': 'Technology',
+          'industry': 'Consumer Electronics',
+          'marketCap': 2750000000000.0,
+          'peRatio': 28.5,
+          'dividendYield': 0.5,
+        },
+        'MSFT': {
+          'companyName': 'Microsoft Corporation',
+          'sector': 'Technology',
+          'industry': 'Software',
+          'marketCap': 2510000000000.0,
+          'peRatio': 32.1,
+          'dividendYield': 0.8,
+        },
+        'GOOGL': {
+          'companyName': 'Alphabet Inc.',
+          'sector': 'Technology',
+          'industry': 'Internet Content & Information',
+          'marketCap': 1780000000000.0,
+          'peRatio': 25.8,
+          'dividendYield': 0.0,
+        },
+        'AMZN': {
+          'companyName': 'Amazon.com Inc.',
+          'sector': 'Consumer Discretionary',
+          'industry': 'Internet Retail',
+          'marketCap': 1510000000000.0,
+          'peRatio': 45.2,
+          'dividendYield': 0.0,
+        },
+        'NVDA': {
+          'companyName': 'NVIDIA Corporation',
+          'sector': 'Technology',
+          'industry': 'Semiconductors',
+          'marketCap': 1198000000000.0,
+          'peRatio': 65.3,
+          'dividendYield': 0.1,
+        },
+      };
+
+      final data = companyData[symbol];
+      if (data != null) {
+        print(
+            '✅ Overview procesado para $symbol: ${data['companyName']} - ${data['sector']}');
+        return data;
+      } else {
+        print('❌ No se encontraron datos de overview para $symbol');
+        return {
+          'companyName': symbol,
+          'sector': 'N/A',
+          'industry': 'N/A',
+          'marketCap': 0.0,
+          'peRatio': 0.0,
+          'dividendYield': 0.0,
+        };
+      }
+    } catch (e) {
+      print('❌ Error obteniendo overview de $symbol: $e');
+      return null;
+    }
+  }
+
+  // Obtener múltiples stocks con datos reales
+  static Future<List<Stock>> fetchRealTimeStocks() async {
+    List<Stock> stocks = [];
+
+    // Limitar a 5 símbolos para no exceder el límite gratuito de Alpha Vantage
+    final symbolsToFetch = ApiConfig.popularSymbols.take(5).toList();
+
+    print(
+        '🚀 Iniciando fetch de ${symbolsToFetch.length} símbolos: $symbolsToFetch');
+
+    for (String symbol in symbolsToFetch) {
+      try {
+        print('\n📈 Procesando $symbol...');
+
+        // Obtener datos en tiempo real
+        final quoteData = await getRealTimeQuote(symbol);
+        if (quoteData == null) {
+          print(
+              '❌ No se pudieron obtener datos de quote para $symbol, saltando...');
+          continue;
+        }
+
+        // Obtener información fundamental
+        final overviewData = await getCompanyOverview(symbol);
+
+        // Crear objeto Stock con datos reales
+        final stock = Stock(
+          symbol: symbol,
+          companyName: overviewData?['companyName'] ?? symbol,
+          currentPrice: quoteData['currentPrice'],
+          change: quoteData['change'],
+          changePercent: quoteData['changePercent'],
+          marketCap: overviewData?['marketCap'] ?? 0.0,
+          volume: quoteData['volume'],
+          rank: stocks.length + 1,
+          aiAnalysis: _generateAIAnalysis(symbol, overviewData, quoteData),
+          recommendation: _generateRecommendation(
+            quoteData['changePercent'],
+            quoteData['currentPrice'],
+            quoteData['fiftyTwoWeekHigh'],
+            quoteData['fiftyTwoWeekLow'],
+          ),
+          targetPrice: quoteData['currentPrice'] * 1.1, // Estimación simple
+          sector: overviewData?['sector'] ?? 'N/A',
+          peRatio: overviewData?['peRatio'] ?? 0.0,
+          dividendYield: overviewData?['dividendYield'] ?? 0.0,
+          logoUrl: getLogoUrl(symbol), // Agregar URL del logo
+        );
+
+        stocks.add(stock);
+        print('✅ Stock agregado: ${stock.symbol} - \$${stock.currentPrice}');
+
+        // Pausa para no exceder límites de API
+        await Future.delayed(Duration(milliseconds: 200));
+      } catch (e) {
+        print('❌ Error procesando $symbol: $e');
+      }
+    }
+
+    print('\n📊 Total de stocks obtenidos: ${stocks.length}');
+
+    // Si no se obtuvieron datos reales, devolver datos mock
+    if (stocks.isEmpty) {
+      print('⚠️ No se obtuvieron datos reales, usando datos mock');
+      return getMockStocks();
+    }
+
+    return stocks;
+  }
+
+  // Generar análisis AI basado en datos disponibles
+  static String _generateAIAnalysis(String symbol,
+      Map<String, dynamic>? overviewData, Map<String, dynamic>? quoteData) {
+    final sector = overviewData?['sector'] ?? 'Tecnología';
+    final peRatio = overviewData?['peRatio'] ?? 0.0;
+    final marketCap = overviewData?['marketCap'] ?? 0.0;
+
+    // Análisis de posición del precio
+    String priceAnalysis = '';
+    if (quoteData != null) {
+      final currentPrice = quoteData['currentPrice'] ?? 0.0;
+      final fiftyTwoWeekHigh = quoteData['fiftyTwoWeekHigh'] ?? 0.0;
+      final fiftyTwoWeekLow = quoteData['fiftyTwoWeekLow'] ?? 0.0;
+
+      if (fiftyTwoWeekHigh > 0 && fiftyTwoWeekLow > 0) {
+        final range = fiftyTwoWeekHigh - fiftyTwoWeekLow;
+        final positionFromLow = currentPrice - fiftyTwoWeekLow;
+        final relativePosition = range > 0 ? positionFromLow / range : 0.5;
+
+        if (relativePosition < 0.3) {
+          priceAnalysis =
+              ' El precio actual está cerca del mínimo de 52 semanas, presentando una oportunidad de compra atractiva.';
+        } else if (relativePosition > 0.7) {
+          priceAnalysis =
+              ' El precio actual está cerca del máximo de 52 semanas, sugiriendo precaución en nuevas posiciones.';
+        } else {
+          priceAnalysis =
+              ' El precio actual se encuentra en un rango medio, ofreciendo un balance entre riesgo y oportunidad.';
+        }
+      }
+    }
+
+    if (sector == 'Technology') {
+      return '$symbol muestra fortaleza en el sector tecnológico. Con un P/E ratio de ${peRatio.toStringAsFixed(1)}, la empresa mantiene una posición sólida en el mercado.$priceAnalysis';
+    } else if (sector == 'Healthcare') {
+      return '$symbol opera en el sector de salud, un área de crecimiento constante. La empresa demuestra estabilidad financiera y potencial de crecimiento.$priceAnalysis';
+    } else if (sector == 'Financial Services') {
+      return '$symbol es una empresa líder en servicios financieros. Con una capitalización de mercado significativa, muestra resistencia en diferentes condiciones económicas.$priceAnalysis';
+    } else {
+      return '$symbol presenta oportunidades de inversión interesantes en el sector $sector. Se recomienda análisis adicional antes de tomar decisiones de inversión.$priceAnalysis';
+    }
+  }
+
+  // Generar recomendación basada en posición del precio y cambio porcentual
+  static String _generateRecommendation(double changePercent,
+      double currentPrice, double fiftyTwoWeekHigh, double fiftyTwoWeekLow) {
+    // Calcular la posición relativa del precio actual
+    final range = fiftyTwoWeekHigh - fiftyTwoWeekLow;
+    final positionFromLow = currentPrice - fiftyTwoWeekLow;
+    final relativePosition = range > 0 ? positionFromLow / range : 0.5;
+
+    // Lógica de recomendación mejorada con letras
+    if (changePercent > 2.0) {
+      return 'B'; // Buy
+    } else if (changePercent > 0) {
+      return 'H'; // Hold
+    } else if (changePercent > -2.0) {
+      // Si está más cerca del mínimo de 52 semanas, es oportunidad de compra
+      if (relativePosition < 0.4) {
+        return 'B'; // Buy
+      }
+      // Si está más cerca del máximo de 52 semanas, es oportunidad de venta
+      else if (relativePosition > 0.6) {
+        return 'S'; // Sell
+      }
+      // Si está en el medio, observar
+      else {
+        return 'W'; // Watch
+      }
+    } else {
+      return 'S'; // Sell
+    }
+  }
+
+  // Datos de ejemplo para desarrollo (mantener como fallback)
   static List<Stock> getMockStocks() {
     return [
       Stock(
@@ -17,12 +298,14 @@ class StockService {
         marketCap: 2750000000000,
         volume: 45678900,
         rank: 1,
-        aiAnalysis: 'Apple muestra fortaleza en innovación tecnológica con sólidos fundamentos financieros. El lanzamiento del iPhone 15 y servicios en la nube impulsan el crecimiento.',
-        recommendation: 'COMPRAR',
+        aiAnalysis:
+            'Apple muestra fortaleza en innovación tecnológica con sólidos fundamentos financieros. El lanzamiento del iPhone 15 y servicios en la nube impulsan el crecimiento.',
+        recommendation: 'B',
         targetPrice: 185.00,
         sector: 'Tecnología',
         peRatio: 28.5,
         dividendYield: 0.5,
+        logoUrl: getLogoUrl('AAPL'),
       ),
       Stock(
         symbol: 'MSFT',
@@ -33,12 +316,14 @@ class StockService {
         marketCap: 2510000000000,
         volume: 23456700,
         rank: 2,
-        aiAnalysis: 'Microsoft lidera en IA y computación en la nube. Azure y Office 365 mantienen crecimiento constante con excelente rentabilidad.',
-        recommendation: 'COMPRAR',
+        aiAnalysis:
+            'Microsoft lidera en IA y computación en la nube. Azure y Office 365 mantienen crecimiento constante con excelente rentabilidad.',
+        recommendation: 'B',
         targetPrice: 350.00,
         sector: 'Tecnología',
         peRatio: 32.1,
         dividendYield: 0.8,
+        logoUrl: getLogoUrl('MSFT'),
       ),
       Stock(
         symbol: 'GOOGL',
@@ -49,12 +334,14 @@ class StockService {
         marketCap: 1780000000000,
         volume: 34567800,
         rank: 3,
-        aiAnalysis: 'Google domina la publicidad digital y avanza en IA. YouTube y Google Cloud son motores de crecimiento principales.',
-        recommendation: 'COMPRAR',
+        aiAnalysis:
+            'Google domina la publicidad digital y avanza en IA. YouTube y Google Cloud son motores de crecimiento principales.',
+        recommendation: 'B',
         targetPrice: 155.00,
         sector: 'Tecnología',
         peRatio: 25.8,
         dividendYield: 0.0,
+        logoUrl: getLogoUrl('GOOGL'),
       ),
       Stock(
         symbol: 'AMZN',
@@ -65,12 +352,14 @@ class StockService {
         marketCap: 1510000000000,
         volume: 56789000,
         rank: 4,
-        aiAnalysis: 'Amazon mantiene liderazgo en e-commerce y AWS. La eficiencia operativa y expansión internacional son catalizadores.',
-        recommendation: 'COMPRAR',
+        aiAnalysis:
+            'Amazon mantiene liderazgo en e-commerce y AWS. La eficiencia operativa y expansión internacional son catalizadores.',
+        recommendation: 'B',
         targetPrice: 160.00,
         sector: 'Consumo Discrecional',
         peRatio: 45.2,
         dividendYield: 0.0,
+        logoUrl: getLogoUrl('AMZN'),
       ),
       Stock(
         symbol: 'NVDA',
@@ -81,107 +370,64 @@ class StockService {
         marketCap: 1198000000000,
         volume: 67890100,
         rank: 5,
-        aiAnalysis: 'NVIDIA es líder en GPUs para IA y gaming. La demanda de chips para machine learning impulsa el crecimiento exponencial.',
-        recommendation: 'COMPRAR',
+        aiAnalysis:
+            'NVIDIA es líder en GPUs para IA y gaming. La demanda de chips para machine learning impulsa el crecimiento exponencial.',
+        recommendation: 'B',
         targetPrice: 520.00,
         sector: 'Tecnología',
         peRatio: 65.3,
         dividendYield: 0.1,
-      ),
-      Stock(
-        symbol: 'TSLA',
-        companyName: 'Tesla Inc.',
-        currentPrice: 248.42,
-        change: -5.67,
-        changePercent: -2.23,
-        marketCap: 789000000000,
-        volume: 78901200,
-        rank: 6,
-        aiAnalysis: 'Tesla innova en vehículos eléctricos y energía renovable. La expansión global y nuevos modelos sostienen el crecimiento.',
-        recommendation: 'MANTENER',
-        targetPrice: 260.00,
-        sector: 'Consumo Discrecional',
-        peRatio: 78.9,
-        dividendYield: 0.0,
-      ),
-      Stock(
-        symbol: 'META',
-        companyName: 'Meta Platforms Inc.',
-        currentPrice: 334.92,
-        change: 4.56,
-        changePercent: 1.38,
-        marketCap: 848000000000,
-        volume: 45678900,
-        rank: 7,
-        aiAnalysis: 'Meta revoluciona con realidad virtual y metaverso. Instagram y WhatsApp mantienen dominio en redes sociales.',
-        recommendation: 'COMPRAR',
-        targetPrice: 360.00,
-        sector: 'Tecnología',
-        peRatio: 22.4,
-        dividendYield: 0.0,
-      ),
-      Stock(
-        symbol: 'BRK.A',
-        companyName: 'Berkshire Hathaway Inc.',
-        currentPrice: 523000.00,
-        change: 1250.00,
-        changePercent: 0.24,
-        marketCap: 745000000000,
-        volume: 1234,
-        rank: 8,
-        aiAnalysis: 'Berkshire Hathaway diversifica inversiones con gestión legendaria. Portfolio sólido con empresas de calidad.',
-        recommendation: 'COMPRAR',
-        targetPrice: 540000.00,
-        sector: 'Finanzas',
-        peRatio: 8.9,
-        dividendYield: 0.0,
+        logoUrl: getLogoUrl('NVDA'),
       ),
     ];
   }
 
-  // Método para obtener datos del backend
-  static Future<List<Stock>> fetchStocks() async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/api/stocks'),
-        headers: {'Content-Type': 'application/json'},
-      );
+  // Método de prueba para verificar la API
+  static Future<void> testApiConnection() async {
+    print('🧪 Iniciando prueba de conexión a Yahoo Finance...');
 
-      if (response.statusCode == 200) {
-        final List<dynamic> jsonData = json.decode(response.body);
-        return jsonData.map((json) => Stock.fromJson(json)).toList();
+    try {
+      final testSymbol = 'AAPL';
+      print('🔍 Probando con símbolo: $testSymbol');
+
+      final quoteData = await getRealTimeQuote(testSymbol);
+      if (quoteData != null) {
+        print('✅ Yahoo Finance funcionando correctamente!');
+        print('📊 Datos obtenidos: $quoteData');
       } else {
-        // En caso de error, devolver datos mock
-        return getMockStocks();
+        print('❌ No se pudieron obtener datos de Yahoo Finance');
       }
     } catch (e) {
-      // En caso de error de conexión, devolver datos mock
-      return getMockStocks();
+      print('❌ Error en prueba de API: $e');
     }
   }
 
   // Método para obtener análisis detallado de una acción
   static Future<Map<String, dynamic>> fetchStockAnalysis(String symbol) async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/api/stocks/$symbol/analysis'),
-        headers: {'Content-Type': 'application/json'},
-      );
+      // Obtener datos en tiempo real de Yahoo Finance
+      final quoteData = await getRealTimeQuote(symbol);
+      final overviewData = await getCompanyOverview(symbol);
 
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
-      } else {
-        return {
-          'technical': 'Análisis técnico no disponible',
-          'fundamental': 'Análisis fundamental no disponible',
-          'sentiment': 'Análisis de sentimiento no disponible',
-        };
-      }
+      return {
+        'technical':
+            'Análisis técnico: ${quoteData != null ? "Datos disponibles de Yahoo Finance" : "No disponible"}',
+        'fundamental':
+            'Análisis fundamental: ${overviewData != null ? "Datos disponibles" : "No disponible"}',
+        'sentiment':
+            'Análisis de sentimiento: Basado en datos de mercado en tiempo real',
+        'currentPrice': quoteData?['currentPrice'] ?? 0.0,
+        'change': quoteData?['change'] ?? 0.0,
+        'changePercent': quoteData?['changePercent'] ?? 0.0,
+      };
     } catch (e) {
       return {
         'technical': 'Error de conexión',
         'fundamental': 'Error de conexión',
         'sentiment': 'Error de conexión',
+        'currentPrice': 0.0,
+        'change': 0.0,
+        'changePercent': 0.0,
       };
     }
   }

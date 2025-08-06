@@ -13,6 +13,7 @@ class Stock {
   final String sector;
   final double peRatio;
   final double dividendYield;
+  final String logoUrl; // Nuevo campo para el logo
 
   Stock({
     required this.symbol,
@@ -29,6 +30,7 @@ class Stock {
     required this.sector,
     required this.peRatio,
     required this.dividendYield,
+    required this.logoUrl, // Agregar el nuevo campo
   });
 
   factory Stock.fromJson(Map<String, dynamic> json) {
@@ -47,6 +49,7 @@ class Stock {
       sector: json['sector'] ?? '',
       peRatio: (json['peRatio'] ?? 0.0).toDouble(),
       dividendYield: (json['dividendYield'] ?? 0.0).toDouble(),
+      logoUrl: json['logoUrl'] ?? '', // Agregar el nuevo campo
     );
   }
 
@@ -66,6 +69,7 @@ class Stock {
       'sector': sector,
       'peRatio': peRatio,
       'dividendYield': dividendYield,
+      'logoUrl': logoUrl, // Agregar el nuevo campo
     };
   }
 }
