@@ -118,6 +118,46 @@ class StockService {
           'peRatio': 65.3,
           'dividendYield': 0.1,
         },
+        'IBIT': {
+          'companyName': 'iShares Bitcoin Trust',
+          'sector': 'Financial Services',
+          'industry': 'Asset Management',
+          'marketCap': 45000000000.0,
+          'peRatio': 0.0,
+          'dividendYield': 0.0,
+        },
+        'ETHA': {
+          'companyName': 'iShares Ethereum Trust',
+          'sector': 'Financial Services',
+          'industry': 'Asset Management',
+          'marketCap': 2500000000.0,
+          'peRatio': 0.0,
+          'dividendYield': 0.0,
+        },
+        'BRK.B': {
+          'companyName': 'Berkshire Hathaway Inc.',
+          'sector': 'Financial Services',
+          'industry': 'Insurance',
+          'marketCap': 850000000000.0,
+          'peRatio': 22.5,
+          'dividendYield': 0.0,
+        },
+        'VOO': {
+          'companyName': 'Vanguard S&P 500 ETF',
+          'sector': 'Financial Services',
+          'industry': 'Asset Management',
+          'marketCap': 350000000000.0,
+          'peRatio': 0.0,
+          'dividendYield': 1.4,
+        },
+        'QQQ': {
+          'companyName': 'Invesco QQQ Trust',
+          'sector': 'Financial Services',
+          'industry': 'Asset Management',
+          'marketCap': 250000000000.0,
+          'peRatio': 0.0,
+          'dividendYield': 0.6,
+        },
       };
 
       final data = companyData[symbol];
@@ -142,12 +182,12 @@ class StockService {
     }
   }
 
-  // Obtener múltiples stocks con datos reales
+  // Obtener múltiples stocks con datos reales (carga progresiva)
   static Future<List<Stock>> fetchRealTimeStocks() async {
     List<Stock> stocks = [];
 
-    // Limitar a 5 símbolos para no exceder el límite gratuito de Alpha Vantage
-    final symbolsToFetch = ApiConfig.popularSymbols.take(5).toList();
+    // Obtener todos los símbolos disponibles
+    final symbolsToFetch = ApiConfig.popularSymbols.toList();
 
     print(
         '🚀 Iniciando fetch de ${symbolsToFetch.length} símbolos: $symbolsToFetch');
@@ -210,6 +250,75 @@ class StockService {
     }
 
     return stocks;
+  }
+
+  // Obtener stocks con carga progresiva (8 en 8)
+  static Stream<List<Stock>> fetchRealTimeStocksStream() async* {
+    List<Stock> stocks = [];
+    final symbolsToFetch = ApiConfig.popularSymbols.toList();
+    final batchSize = 8;
+
+    print('🚀 Iniciando carga progresiva de ${symbolsToFetch.length} símbolos');
+
+    for (int i = 0; i < symbolsToFetch.length; i += batchSize) {
+      final batchSymbols = symbolsToFetch.skip(i).take(batchSize).toList();
+      print('\n📦 Procesando lote ${(i ~/ batchSize) + 1}: $batchSymbols');
+
+      for (String symbol in batchSymbols) {
+        try {
+          print('📈 Procesando $symbol...');
+
+          // Obtener datos en tiempo real
+          final quoteData = await getRealTimeQuote(symbol);
+          if (quoteData == null) {
+            print(
+                '❌ No se pudieron obtener datos de quote para $symbol, saltando...');
+            continue;
+          }
+
+          // Obtener información fundamental
+          final overviewData = await getCompanyOverview(symbol);
+
+          // Crear objeto Stock con datos reales
+          final stock = Stock(
+            symbol: symbol,
+            companyName: overviewData?['companyName'] ?? symbol,
+            currentPrice: quoteData['currentPrice'],
+            change: quoteData['change'],
+            changePercent: quoteData['changePercent'],
+            marketCap: overviewData?['marketCap'] ?? 0.0,
+            volume: quoteData['volume'],
+            rank: stocks.length + 1,
+            aiAnalysis: _generateAIAnalysis(symbol, overviewData, quoteData),
+            recommendation: _generateRecommendation(
+              quoteData['changePercent'],
+              quoteData['currentPrice'],
+              quoteData['fiftyTwoWeekHigh'],
+              quoteData['fiftyTwoWeekLow'],
+            ),
+            targetPrice: quoteData['currentPrice'] * 1.1,
+            sector: overviewData?['sector'] ?? 'N/A',
+            peRatio: overviewData?['peRatio'] ?? 0.0,
+            dividendYield: overviewData?['dividendYield'] ?? 0.0,
+            logoUrl: getLogoUrl(symbol),
+          );
+
+          stocks.add(stock);
+          print('✅ Stock agregado: ${stock.symbol} - \$${stock.currentPrice}');
+
+          // Pausa para no exceder límites de API
+          await Future.delayed(Duration(milliseconds: 200));
+        } catch (e) {
+          print('❌ Error procesando $symbol: $e');
+        }
+      }
+
+      // Emitir el lote actual
+      print('📤 Emitiendo lote con ${stocks.length} stocks');
+      yield List.from(stocks);
+    }
+
+    print('\n📊 Carga progresiva completada: ${stocks.length} stocks totales');
   }
 
   // Generar análisis AI basado en datos disponibles
@@ -378,6 +487,96 @@ class StockService {
         peRatio: 65.3,
         dividendYield: 0.1,
         logoUrl: getLogoUrl('NVDA'),
+      ),
+      Stock(
+        symbol: 'IBIT',
+        companyName: 'iShares Bitcoin Trust',
+        currentPrice: 42.15,
+        change: 1.25,
+        changePercent: 3.05,
+        marketCap: 45000000000,
+        volume: 12345600,
+        rank: 6,
+        aiAnalysis:
+            'IBIT es el ETF de Bitcoin más grande del mundo. La adopción institucional de Bitcoin y la demanda de exposición digital impulsan el crecimiento.',
+        recommendation: 'B',
+        targetPrice: 45.00,
+        sector: 'Servicios Financieros',
+        peRatio: 0.0,
+        dividendYield: 0.0,
+        logoUrl: getLogoUrl('IBIT'),
+      ),
+      Stock(
+        symbol: 'ETHA',
+        companyName: 'iShares Ethereum Trust',
+        currentPrice: 8.75,
+        change: 0.45,
+        changePercent: 5.42,
+        marketCap: 2500000000,
+        volume: 5678900,
+        rank: 7,
+        aiAnalysis:
+            'ETHA es el ETF de Ethereum de BlackRock. La adopción institucional de Ethereum y el crecimiento de DeFi son catalizadores principales.',
+        recommendation: 'B',
+        targetPrice: 9.50,
+        sector: 'Servicios Financieros',
+        peRatio: 0.0,
+        dividendYield: 0.0,
+        logoUrl: getLogoUrl('ETHA'),
+      ),
+      Stock(
+        symbol: 'BRK.B',
+        companyName: 'Berkshire Hathaway Inc.',
+        currentPrice: 415.25,
+        change: 3.45,
+        changePercent: 0.84,
+        marketCap: 850000000000,
+        volume: 3456789,
+        rank: 8,
+        aiAnalysis:
+            'Berkshire Hathaway es una empresa de inversión diversificada liderada por Warren Buffett. Su portafolio diversificado y gestión conservadora ofrecen estabilidad a largo plazo.',
+        recommendation: 'B',
+        targetPrice: 430.00,
+        sector: 'Servicios Financieros',
+        peRatio: 22.5,
+        dividendYield: 0.0,
+        logoUrl: getLogoUrl('BRK.B'),
+      ),
+      Stock(
+        symbol: 'VOO',
+        companyName: 'Vanguard S&P 500 ETF',
+        currentPrice: 485.75,
+        change: 2.15,
+        changePercent: 0.44,
+        marketCap: 350000000000,
+        volume: 1234567,
+        rank: 9,
+        aiAnalysis:
+            'VOO es el ETF más popular que replica el S&P 500. Ofrece exposición diversificada a las 500 empresas más grandes de Estados Unidos con bajos costos.',
+        recommendation: 'B',
+        targetPrice: 495.00,
+        sector: 'Servicios Financieros',
+        peRatio: 0.0,
+        dividendYield: 1.4,
+        logoUrl: getLogoUrl('VOO'),
+      ),
+      Stock(
+        symbol: 'QQQ',
+        companyName: 'Invesco QQQ Trust',
+        currentPrice: 425.50,
+        change: 5.25,
+        changePercent: 1.25,
+        marketCap: 250000000000,
+        volume: 2345678,
+        rank: 10,
+        aiAnalysis:
+            'QQQ replica el índice NASDAQ-100, ofreciendo exposición a las empresas tecnológicas más innovadoras. Ideal para inversores que buscan crecimiento tecnológico.',
+        recommendation: 'B',
+        targetPrice: 435.00,
+        sector: 'Servicios Financieros',
+        peRatio: 0.0,
+        dividendYield: 0.6,
+        logoUrl: getLogoUrl('QQQ'),
       ),
     ];
   }

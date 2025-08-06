@@ -4,6 +4,7 @@ import '../models/stock.dart';
 import '../services/stock_service.dart';
 import '../widgets/stock_card.dart';
 import '../widgets/stock_shimmer.dart';
+import '../config/api_config.dart';
 import 'stock_detail_screen.dart';
 
 class RankingScreen extends StatefulWidget {
@@ -18,6 +19,9 @@ class _RankingScreenState extends State<RankingScreen>
   List<Stock> stocks = [];
   bool isLoading = true;
   bool isRefreshing = false;
+  bool isProgressiveLoading = false;
+  int totalSymbols = 0;
+  int loadedSymbols = 0;
   String selectedFilter = 'Todos';
   final List<String> filters = [
     'Todos',
@@ -36,6 +40,10 @@ class _RankingScreenState extends State<RankingScreen>
     if (!isRefreshing) {
       setState(() {
         isLoading = true;
+        isProgressiveLoading = true;
+        stocks = []; // Limpiar stocks existentes
+        totalSymbols = ApiConfig.popularSymbols.length;
+        loadedSymbols = 0;
       });
     }
 
@@ -43,18 +51,31 @@ class _RankingScreenState extends State<RankingScreen>
       // Primero probar la conexión a la API
       await StockService.testApiConnection();
 
-      // Usar datos reales en lugar de mock
-      final loadedStocks = await StockService.fetchRealTimeStocks();
-      setState(() {
-        stocks = loadedStocks;
-        isLoading = false;
-        isRefreshing = false;
-      });
+      // Usar carga progresiva
+      await for (final loadedStocks
+          in StockService.fetchRealTimeStocksStream()) {
+        if (mounted) {
+          setState(() {
+            stocks = loadedStocks;
+            loadedSymbols = loadedStocks.length;
+            isLoading = false;
+            isRefreshing = false;
+          });
+        }
+      }
+
+      // Carga completada
+      if (mounted) {
+        setState(() {
+          isProgressiveLoading = false;
+        });
+      }
     } catch (e) {
       print('❌ Error en _loadStocks: $e');
       setState(() {
         isLoading = false;
         isRefreshing = false;
+        isProgressiveLoading = false;
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -360,8 +381,47 @@ class _RankingScreenState extends State<RankingScreen>
       backgroundColor: Colors.black.withOpacity(0.8),
       child: ListView.builder(
         padding: const EdgeInsets.only(top: 20, bottom: 20),
-        itemCount: filteredStocks.length,
+        itemCount: filteredStocks.length + (isProgressiveLoading ? 1 : 0),
         itemBuilder: (context, index) {
+          // Mostrar indicador de progreso al final si está cargando
+          if (isProgressiveLoading && index == filteredStocks.length) {
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.blue.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.blue,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Cargando más acciones... ($loadedSymbols/$totalSymbols)',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Roboto',
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
           final stock = filteredStocks[index];
           return StockCard(
             stock: stock,
