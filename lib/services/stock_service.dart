@@ -1,9 +1,28 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../models/stock.dart';
 import '../config/api_config.dart';
 
 class StockService {
+  // Normalizar sectores a español coherente con filtros/UX
+  static String normalizeSectorToSpanish(String? sector) {
+    switch ((sector ?? '').trim()) {
+      case 'Technology':
+        return 'Tecnología';
+      case 'Consumer Discretionary':
+        return 'Consumo Discrecional';
+      case 'Financial Services':
+      case 'Finance':
+      case 'Financials':
+        return 'Servicios Financieros';
+      case 'Healthcare':
+        return 'Salud';
+      default:
+        return sector == null || sector.isEmpty ? 'N/A' : sector;
+    }
+  }
+
   // Obtener URL del logo de una empresa
   static String getLogoUrl(String symbol) {
     final domain = ApiConfig.symbolToDomain[symbol];
@@ -17,14 +36,28 @@ class StockService {
   // Obtener datos en tiempo real usando Yahoo Finance (gratuito)
   static Future<Map<String, dynamic>?> getRealTimeQuote(String symbol) async {
     try {
-      final url =
-          '${ApiConfig.yahooFinanceBaseUrl}/$symbol?interval=1d&range=1d';
-      print('🔍 Haciendo request a Yahoo Finance: $url');
+      final yfSymbol = ApiConfig.yahooSymbolOverrides[symbol] ?? symbol;
+      final uri = Uri.https(
+        'query1.finance.yahoo.com',
+        '/v8/finance/chart/$yfSymbol',
+        {
+          'interval': '1d',
+          'range': '1d',
+        },
+      );
+      assert(() {
+        // ignore: avoid_print
+        debugPrint('🔍 Haciendo request a Yahoo Finance: $uri');
+        return true;
+      }());
 
-      final response = await http.get(Uri.parse(url));
+      final response = await http.get(uri);
 
-      print('📊 Status code: ${response.statusCode}');
-      print('📄 Respuesta completa de Yahoo Finance: ${response.body}');
+      assert(() {
+        // ignore: avoid_print
+        debugPrint('📊 Status code: ${response.statusCode}');
+        return true;
+      }());
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -35,39 +68,88 @@ class StockService {
           final result = data['chart']['result'][0];
           final meta = result['meta'];
           final indicators = result['indicators'];
-          final quote = indicators['quote'][0];
+          final quote = (indicators != null &&
+                  indicators['quote'] != null &&
+                  indicators['quote'].isNotEmpty)
+              ? indicators['quote'][0]
+              : <String, dynamic>{};
 
-          final currentPrice = meta['regularMarketPrice']?.toDouble() ?? 0.0;
-          final previousClose = meta['chartPreviousClose']?.toDouble() ?? 0.0;
+          double toDoubleSafe(dynamic v) {
+            if (v == null) return 0.0;
+            if (v is num) return v.toDouble();
+            return double.tryParse(v.toString()) ?? 0.0;
+          }
+
+          final currentPrice = toDoubleSafe(meta['regularMarketPrice']);
+          final previousClose = toDoubleSafe(meta['chartPreviousClose']);
           final change = currentPrice - previousClose;
           final changePercent =
               previousClose > 0 ? (change / previousClose) * 100 : 0.0;
+
+          List<num>? asNumList(dynamic v) {
+            if (v is List) {
+              try {
+                return v.cast<num>();
+              } catch (_) {
+                return null;
+              }
+            }
+            return null;
+          }
+
+          final volumes = asNumList(quote['volume']);
+          final opens = asNumList(quote['open']);
+          final highs = asNumList(quote['high']);
+          final lows = asNumList(quote['low']);
 
           final resultData = {
             'symbol': symbol,
             'currentPrice': currentPrice,
             'change': change,
             'changePercent': changePercent,
-            'volume': quote['volume']?.last?.toDouble() ?? 0.0,
+            'volume': (volumes != null && volumes.isNotEmpty)
+                ? volumes.last.toDouble()
+                : 0.0,
             'previousClose': previousClose,
-            'open': quote['open']?.last?.toDouble() ?? 0.0,
-            'high': quote['high']?.last?.toDouble() ?? 0.0,
-            'low': quote['low']?.last?.toDouble() ?? 0.0,
-            'fiftyTwoWeekHigh': meta['fiftyTwoWeekHigh']?.toDouble() ?? 0.0,
-            'fiftyTwoWeekLow': meta['fiftyTwoWeekLow']?.toDouble() ?? 0.0,
+            'open': (opens != null && opens.isNotEmpty)
+                ? opens.last.toDouble()
+                : 0.0,
+            'high': (highs != null && highs.isNotEmpty)
+                ? highs.last.toDouble()
+                : 0.0,
+            'low':
+                (lows != null && lows.isNotEmpty) ? lows.last.toDouble() : 0.0,
+            'fiftyTwoWeekHigh': toDoubleSafe(meta['fiftyTwoWeekHigh']),
+            'fiftyTwoWeekLow': toDoubleSafe(meta['fiftyTwoWeekLow']),
           };
-
-          print('✅ Datos procesados para $symbol: $resultData');
+          assert(() {
+            // ignore: avoid_print
+            debugPrint(
+                '✅ Datos procesados para $symbol: ${resultData['currentPrice']}');
+            return true;
+          }());
           return resultData;
         } else {
-          print('❌ No se encontraron datos de quote para $symbol');
+          assert(() {
+            // ignore: avoid_print
+            debugPrint('❌ No se encontraron datos de quote para $symbol');
+            return true;
+          }());
         }
       } else {
-        print('❌ Error HTTP: ${response.statusCode}');
+        assert(() {
+          // ignore: avoid_print
+          debugPrint('❌ Error HTTP: ${response.statusCode}');
+          return true;
+        }());
       }
       return null;
     } catch (e) {
-      print('❌ Error obteniendo datos de $symbol: $e');
+      assert(() {
+        // ignore: avoid_print
+        debugPrint('❌ Error obteniendo datos de $symbol: $e');
+        return true;
+      }());
       return null;
     }
   }
@@ -162,11 +244,19 @@ class StockService {
 
       final data = companyData[symbol];
       if (data != null) {
-        print(
-            '✅ Overview procesado para $symbol: ${data['companyName']} - ${data['sector']}');
+        assert(() {
+          // ignore: avoid_print
+          debugPrint(
+              '✅ Overview procesado para $symbol: ${data['companyName']} - ${data['sector']}');
+          return true;
+        }());
         return data;
       } else {
-        print('❌ No se encontraron datos de overview para $symbol');
+        assert(() {
+          // ignore: avoid_print
+          debugPrint('❌ No se encontraron datos de overview para $symbol');
+          return true;
+        }());
         return {
           'companyName': symbol,
           'sector': 'N/A',
@@ -177,7 +267,11 @@ class StockService {
         };
       }
     } catch (e) {
-      print('❌ Error obteniendo overview de $symbol: $e');
+      assert(() {
+        // ignore: avoid_print
+        debugPrint('❌ Error obteniendo overview de $symbol: $e');
+        return true;
+      }());
       return null;
     }
   }
@@ -189,18 +283,30 @@ class StockService {
     // Obtener todos los símbolos disponibles
     final symbolsToFetch = ApiConfig.popularSymbols.toList();
 
-    print(
-        '🚀 Iniciando fetch de ${symbolsToFetch.length} símbolos: $symbolsToFetch');
+    assert(() {
+      // ignore: avoid_print
+      debugPrint(
+          '🚀 Iniciando fetch de ${symbolsToFetch.length} símbolos: $symbolsToFetch');
+      return true;
+    }());
 
     for (String symbol in symbolsToFetch) {
       try {
-        print('\n📈 Procesando $symbol...');
+        assert(() {
+          // ignore: avoid_print
+          debugPrint('\n📈 Procesando $symbol...');
+          return true;
+        }());
 
         // Obtener datos en tiempo real
         final quoteData = await getRealTimeQuote(symbol);
         if (quoteData == null) {
-          print(
-              '❌ No se pudieron obtener datos de quote para $symbol, saltando...');
+          assert(() {
+            // ignore: avoid_print
+            debugPrint(
+                '❌ No se pudieron obtener datos de quote para $symbol, saltando...');
+            return true;
+          }());
           continue;
         }
 
@@ -225,27 +331,45 @@ class StockService {
             quoteData['fiftyTwoWeekLow'],
           ),
           targetPrice: quoteData['currentPrice'] * 1.1, // Estimación simple
-          sector: overviewData?['sector'] ?? 'N/A',
+          sector: normalizeSectorToSpanish(overviewData?['sector']),
           peRatio: overviewData?['peRatio'] ?? 0.0,
           dividendYield: overviewData?['dividendYield'] ?? 0.0,
           logoUrl: getLogoUrl(symbol), // Agregar URL del logo
         );
 
         stocks.add(stock);
-        print('✅ Stock agregado: ${stock.symbol} - \$${stock.currentPrice}');
+        assert(() {
+          // ignore: avoid_print
+          debugPrint(
+              '✅ Stock agregado: ${stock.symbol} - \$${stock.currentPrice}');
+          return true;
+        }());
 
         // Pausa para no exceder límites de API
-        await Future.delayed(Duration(milliseconds: 200));
+        await Future.delayed(
+            const Duration(milliseconds: ApiConfig.requestDelayMs));
       } catch (e) {
-        print('❌ Error procesando $symbol: $e');
+        assert(() {
+          // ignore: avoid_print
+          debugPrint('❌ Error procesando $symbol: $e');
+          return true;
+        }());
       }
     }
 
-    print('\n📊 Total de stocks obtenidos: ${stocks.length}');
+    assert(() {
+      // ignore: avoid_print
+      debugPrint('\n📊 Total de stocks obtenidos: ${stocks.length}');
+      return true;
+    }());
 
     // Si no se obtuvieron datos reales, devolver datos mock
     if (stocks.isEmpty) {
-      print('⚠️ No se obtuvieron datos reales, usando datos mock');
+      assert(() {
+        // ignore: avoid_print
+        debugPrint('⚠️ No se obtuvieron datos reales, usando datos mock');
+        return true;
+      }());
       return getMockStocks();
     }
 
@@ -256,22 +380,23 @@ class StockService {
   static Stream<List<Stock>> fetchRealTimeStocksStream() async* {
     List<Stock> stocks = [];
     final symbolsToFetch = ApiConfig.popularSymbols.toList();
-    final batchSize = 8;
+    const batchSize = 8;
 
-    print('🚀 Iniciando carga progresiva de ${symbolsToFetch.length} símbolos');
+    debugPrint(
+        '🚀 Iniciando carga progresiva de ${symbolsToFetch.length} símbolos');
 
     for (int i = 0; i < symbolsToFetch.length; i += batchSize) {
       final batchSymbols = symbolsToFetch.skip(i).take(batchSize).toList();
-      print('\n📦 Procesando lote ${(i ~/ batchSize) + 1}: $batchSymbols');
+      debugPrint('\n📦 Procesando lote ${(i ~/ batchSize) + 1}: $batchSymbols');
 
       for (String symbol in batchSymbols) {
         try {
-          print('📈 Procesando $symbol...');
+          debugPrint('📈 Procesando $symbol...');
 
           // Obtener datos en tiempo real
           final quoteData = await getRealTimeQuote(symbol);
           if (quoteData == null) {
-            print(
+            debugPrint(
                 '❌ No se pudieron obtener datos de quote para $symbol, saltando...');
             continue;
           }
@@ -297,28 +422,30 @@ class StockService {
               quoteData['fiftyTwoWeekLow'],
             ),
             targetPrice: quoteData['currentPrice'] * 1.1,
-            sector: overviewData?['sector'] ?? 'N/A',
+            sector: normalizeSectorToSpanish(overviewData?['sector']),
             peRatio: overviewData?['peRatio'] ?? 0.0,
             dividendYield: overviewData?['dividendYield'] ?? 0.0,
             logoUrl: getLogoUrl(symbol),
           );
 
           stocks.add(stock);
-          print('✅ Stock agregado: ${stock.symbol} - \$${stock.currentPrice}');
+          debugPrint(
+              '✅ Stock agregado: ${stock.symbol} - \$${stock.currentPrice}');
 
           // Pausa para no exceder límites de API
-          await Future.delayed(Duration(milliseconds: 200));
+          await Future.delayed(const Duration(milliseconds: 200));
         } catch (e) {
-          print('❌ Error procesando $symbol: $e');
+          debugPrint('❌ Error procesando $symbol: $e');
         }
       }
 
       // Emitir el lote actual
-      print('📤 Emitiendo lote con ${stocks.length} stocks');
+      debugPrint('📤 Emitiendo lote con ${stocks.length} stocks');
       yield List.from(stocks);
     }
 
-    print('\n📊 Carga progresiva completada: ${stocks.length} stocks totales');
+    debugPrint(
+        '\n📊 Carga progresiva completada: ${stocks.length} stocks totales');
   }
 
   // Generar análisis AI basado en datos disponibles
@@ -326,7 +453,7 @@ class StockService {
       Map<String, dynamic>? overviewData, Map<String, dynamic>? quoteData) {
     final sector = overviewData?['sector'] ?? 'Tecnología';
     final peRatio = overviewData?['peRatio'] ?? 0.0;
-    final marketCap = overviewData?['marketCap'] ?? 0.0;
+    // final marketCap = overviewData?['marketCap'] ?? 0.0; // No usado por ahora
 
     // Análisis de posición del precio
     String priceAnalysis = '';
@@ -583,21 +710,21 @@ class StockService {
 
   // Método de prueba para verificar la API
   static Future<void> testApiConnection() async {
-    print('🧪 Iniciando prueba de conexión a Yahoo Finance...');
+    debugPrint('🧪 Iniciando prueba de conexión a Yahoo Finance...');
 
     try {
-      final testSymbol = 'AAPL';
-      print('🔍 Probando con símbolo: $testSymbol');
+      const testSymbol = 'AAPL';
+      debugPrint('🔍 Probando con símbolo: $testSymbol');
 
       final quoteData = await getRealTimeQuote(testSymbol);
       if (quoteData != null) {
-        print('✅ Yahoo Finance funcionando correctamente!');
-        print('📊 Datos obtenidos: $quoteData');
+        debugPrint('✅ Yahoo Finance funcionando correctamente!');
+        debugPrint('📊 Datos obtenidos: $quoteData');
       } else {
-        print('❌ No se pudieron obtener datos de Yahoo Finance');
+        debugPrint('❌ No se pudieron obtener datos de Yahoo Finance');
       }
     } catch (e) {
-      print('❌ Error en prueba de API: $e');
+      debugPrint('❌ Error en prueba de API: $e');
     }
   }
 

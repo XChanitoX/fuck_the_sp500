@@ -83,6 +83,7 @@ class StockCard extends StatelessWidget {
                             child: Image.network(
                               stock.logoUrl,
                               fit: BoxFit.cover,
+                              gaplessPlayback: true,
                               errorBuilder: (context, error, stackTrace) {
                                 return Container(
                                   decoration: BoxDecoration(
@@ -182,7 +183,8 @@ class StockCard extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(
-                                    stock.recommendation,
+                                    _mapRecommendationLabel(
+                                        stock.recommendation),
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: isSmallScreen ? 8 : 10,
@@ -484,6 +486,21 @@ class StockCard extends StatelessWidget {
       return '${(volume / 1000).toStringAsFixed(1)}K';
     } else {
       return volume.toStringAsFixed(0);
+    }
+  }
+
+  String _mapRecommendationLabel(String recommendation) {
+    switch (recommendation.toUpperCase()) {
+      case 'B':
+        return 'Comprar';
+      case 'H':
+        return 'Mantener';
+      case 'S':
+        return 'Vender';
+      case 'W':
+        return 'Observar';
+      default:
+        return recommendation;
     }
   }
 }

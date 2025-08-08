@@ -55,4 +55,9 @@ class ApiConfig {
     'VOO': 'vanguard.com',
     'QQQ': 'invesco.com',
   };
+
+  // Yahoo Finance symbol overrides (e.g., dot vs dash formats)
+  static const Map<String, String> yahooSymbolOverrides = {
+    'BRK.B': 'BRK-B',
+  };
 }

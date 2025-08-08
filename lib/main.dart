@@ -3,6 +3,15 @@ import 'package:flutter/services.dart';
 import 'screens/ranking_screen.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+      systemNavigationBarColor: Color(0xFF0A0A0A),
+      systemNavigationBarIconBrightness: Brightness.light,
+    ),
+  );
   runApp(const MainApp());
 }
 
@@ -11,16 +20,6 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Configurar el sistema de barras para el tema oscuro
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        systemNavigationBarColor: Color(0xFF0A0A0A),
-        systemNavigationBarIconBrightness: Brightness.light,
-      ),
-    );
-
     return MaterialApp(
       title: 'Top Stocks',
       debugShowCheckedModeBanner: false,

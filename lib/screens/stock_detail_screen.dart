@@ -157,7 +157,7 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              widget.stock.recommendation,
+              _mapRecommendationLabel(widget.stock.recommendation),
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 12,
@@ -673,14 +673,35 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
 
   Color _getRecommendationColor(String recommendation) {
     switch (recommendation.toUpperCase()) {
+      case 'B':
       case 'COMPRAR':
         return Colors.green.withOpacity(0.8);
+      case 'H':
       case 'MANTENER':
         return Colors.orange.withOpacity(0.8);
+      case 'S':
       case 'VENDER':
         return Colors.red.withOpacity(0.8);
+      case 'W':
+      case 'OBSERVAR':
+        return Colors.blue.withOpacity(0.8);
       default:
         return Colors.grey.withOpacity(0.8);
+    }
+  }
+
+  String _mapRecommendationLabel(String recommendation) {
+    switch (recommendation.toUpperCase()) {
+      case 'B':
+        return 'Comprar';
+      case 'H':
+        return 'Mantener';
+      case 'S':
+        return 'Vender';
+      case 'W':
+        return 'Observar';
+      default:
+        return recommendation;
     }
   }
 

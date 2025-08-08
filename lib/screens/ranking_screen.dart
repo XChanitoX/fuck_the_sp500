@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter/foundation.dart';
 import '../models/stock.dart';
 import '../services/stock_service.dart';
 import '../widgets/stock_card.dart';
 import '../widgets/stock_shimmer.dart';
 import '../config/api_config.dart';
 import 'stock_detail_screen.dart';
+import 'bubble_screen.dart';
 
 class RankingScreen extends StatefulWidget {
   const RankingScreen({super.key});
@@ -26,8 +28,9 @@ class _RankingScreenState extends State<RankingScreen>
   final List<String> filters = [
     'Todos',
     'Tecnología',
-    'Finanzas',
-    'Consumo Discrecional'
+    'Servicios Financieros',
+    'Consumo Discrecional',
+    'Salud',
   ];
 
   @override
@@ -48,8 +51,10 @@ class _RankingScreenState extends State<RankingScreen>
     }
 
     try {
-      // Primero probar la conexión a la API
-      await StockService.testApiConnection();
+      // Primero probar la conexión a la API (solo en debug)
+      if (kDebugMode) {
+        await StockService.testApiConnection();
+      }
 
       // Usar carga progresiva
       await for (final loadedStocks
@@ -71,7 +76,7 @@ class _RankingScreenState extends State<RankingScreen>
         });
       }
     } catch (e) {
-      print('❌ Error en _loadStocks: $e');
+      debugPrint('❌ Error en _loadStocks: $e');
       setState(() {
         isLoading = false;
         isRefreshing = false;
@@ -196,6 +201,25 @@ class _RankingScreenState extends State<RankingScreen>
                   isRefreshing ? Icons.refresh : Icons.refresh_outlined,
                   color: Colors.white.withOpacity(0.8),
                   size: 24,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Tooltip(
+                message: 'Vista de burbujas',
+                child: IconButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => BubbleScreen(stocks: stocks),
+                      ),
+                    );
+                  },
+                  icon: Icon(
+                    Icons.bubble_chart_outlined,
+                    color: Colors.white.withOpacity(0.9),
+                    size: 24,
+                  ),
                 ),
               ),
             ],
@@ -399,7 +423,7 @@ class _RankingScreenState extends State<RankingScreen>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  SizedBox(
+                  const SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
