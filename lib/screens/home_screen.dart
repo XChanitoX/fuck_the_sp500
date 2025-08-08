@@ -5,6 +5,7 @@ import 'bubble_screen.dart';
 import 'portfolio_list_screen.dart';
 import 'chatbot_screen.dart';
 import 'learning_screen.dart';
+import 'public_portfolios_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -251,12 +252,12 @@ class HomeScreen extends StatelessWidget {
           context,
           icon: Icons.workspaces_outline,
           title: 'Portafolios',
-          subtitle: 'Crea y gestiona tus portafolios y posiciones',
+          subtitle: 'Copia portafolios temáticos con rendimiento histórico',
           gradient: [Colors.orange, Colors.redAccent],
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const PortfolioListScreen()),
+              MaterialPageRoute(builder: (_) => const PublicPortfoliosScreen()),
             );
           },
         )
