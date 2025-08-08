@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'ranking_screen.dart';
 import 'bubble_screen.dart';
 import 'portfolio_list_screen.dart';
+import 'chatbot_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -184,9 +185,9 @@ class HomeScreen extends StatelessWidget {
           subtitle: 'Asistente para dudas financieras y análisis',
           gradient: [Colors.indigo, Colors.blueAccent],
           onTap: () {
-            // TODO: Implement Chatbot screen
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Chatbot IA (próximamente)')),
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ChatbotScreen()),
             );
           },
         )
