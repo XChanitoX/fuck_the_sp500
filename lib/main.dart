@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'screens/ranking_screen.dart';
+import 'screens/home_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -130,7 +130,7 @@ class MainApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const RankingScreen(),
+      home: const HomeScreen(),
     );
   }
 }

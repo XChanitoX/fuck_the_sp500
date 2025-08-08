@@ -8,6 +8,7 @@ import '../widgets/stock_shimmer.dart';
 import '../config/api_config.dart';
 import 'stock_detail_screen.dart';
 import 'bubble_screen.dart';
+import 'portfolio_list_screen.dart';
 
 class RankingScreen extends StatefulWidget {
   const RankingScreen({super.key});
@@ -217,6 +218,25 @@ class _RankingScreenState extends State<RankingScreen>
                   },
                   icon: Icon(
                     Icons.bubble_chart_outlined,
+                    color: Colors.white.withOpacity(0.9),
+                    size: 24,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Tooltip(
+                message: 'Portafolios',
+                child: IconButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const PortfolioListScreen(),
+                      ),
+                    );
+                  },
+                  icon: Icon(
+                    Icons.workspaces_outline,
                     color: Colors.white.withOpacity(0.9),
                     size: 24,
                   ),

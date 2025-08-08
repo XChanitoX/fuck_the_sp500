@@ -278,43 +278,20 @@ class StockService {
 
   // Obtener múltiples stocks con datos reales (carga progresiva)
   static Future<List<Stock>> fetchRealTimeStocks() async {
-    List<Stock> stocks = [];
-
-    // Obtener todos los símbolos disponibles
+    final List<Stock> stocks = [];
     final symbolsToFetch = ApiConfig.popularSymbols.toList();
 
     assert(() {
-      // ignore: avoid_print
-      debugPrint(
-          '🚀 Iniciando fetch de ${symbolsToFetch.length} símbolos: $symbolsToFetch');
+      debugPrint('🚀 Fetch concurrente de ${symbolsToFetch.length} símbolos');
       return true;
     }());
 
-    for (String symbol in symbolsToFetch) {
+    Future<Stock?> buildStock(String symbol) async {
       try {
-        assert(() {
-          // ignore: avoid_print
-          debugPrint('\n📈 Procesando $symbol...');
-          return true;
-        }());
-
-        // Obtener datos en tiempo real
         final quoteData = await getRealTimeQuote(symbol);
-        if (quoteData == null) {
-          assert(() {
-            // ignore: avoid_print
-            debugPrint(
-                '❌ No se pudieron obtener datos de quote para $symbol, saltando...');
-            return true;
-          }());
-          continue;
-        }
-
-        // Obtener información fundamental
+        if (quoteData == null) return null;
         final overviewData = await getCompanyOverview(symbol);
-
-        // Crear objeto Stock con datos reales
-        final stock = Stock(
+        return Stock(
           symbol: symbol,
           companyName: overviewData?['companyName'] ?? symbol,
           currentPrice: quoteData['currentPrice'],
@@ -322,7 +299,7 @@ class StockService {
           changePercent: quoteData['changePercent'],
           marketCap: overviewData?['marketCap'] ?? 0.0,
           volume: quoteData['volume'],
-          rank: stocks.length + 1,
+          rank: 0,
           aiAnalysis: _generateAIAnalysis(symbol, overviewData, quoteData),
           recommendation: _generateRecommendation(
             quoteData['changePercent'],
@@ -330,49 +307,44 @@ class StockService {
             quoteData['fiftyTwoWeekHigh'],
             quoteData['fiftyTwoWeekLow'],
           ),
-          targetPrice: quoteData['currentPrice'] * 1.1, // Estimación simple
+          targetPrice: quoteData['currentPrice'] * 1.1,
           sector: normalizeSectorToSpanish(overviewData?['sector']),
           peRatio: overviewData?['peRatio'] ?? 0.0,
           dividendYield: overviewData?['dividendYield'] ?? 0.0,
-          logoUrl: getLogoUrl(symbol), // Agregar URL del logo
+          logoUrl: getLogoUrl(symbol),
         );
-
-        stocks.add(stock);
-        assert(() {
-          // ignore: avoid_print
-          debugPrint(
-              '✅ Stock agregado: ${stock.symbol} - \$${stock.currentPrice}');
-          return true;
-        }());
-
-        // Pausa para no exceder límites de API
-        await Future.delayed(
-            const Duration(milliseconds: ApiConfig.requestDelayMs));
-      } catch (e) {
-        assert(() {
-          // ignore: avoid_print
-          debugPrint('❌ Error procesando $symbol: $e');
-          return true;
-        }());
+      } catch (_) {
+        return null;
       }
     }
 
-    assert(() {
-      // ignore: avoid_print
-      debugPrint('\n📊 Total de stocks obtenidos: ${stocks.length}');
-      return true;
-    }());
-
-    // Si no se obtuvieron datos reales, devolver datos mock
-    if (stocks.isEmpty) {
-      assert(() {
-        // ignore: avoid_print
-        debugPrint('⚠️ No se obtuvieron datos reales, usando datos mock');
-        return true;
-      }());
-      return getMockStocks();
+    final results = await Future.wait(symbolsToFetch.map(buildStock));
+    for (final s in results.whereType<Stock>()) {
+      stocks.add(s);
+    }
+    for (int i = 0; i < stocks.length; i++) {
+      stocks[i] = Stock(
+        symbol: stocks[i].symbol,
+        companyName: stocks[i].companyName,
+        currentPrice: stocks[i].currentPrice,
+        change: stocks[i].change,
+        changePercent: stocks[i].changePercent,
+        marketCap: stocks[i].marketCap,
+        volume: stocks[i].volume,
+        rank: i + 1,
+        aiAnalysis: stocks[i].aiAnalysis,
+        recommendation: stocks[i].recommendation,
+        targetPrice: stocks[i].targetPrice,
+        sector: stocks[i].sector,
+        peRatio: stocks[i].peRatio,
+        dividendYield: stocks[i].dividendYield,
+        logoUrl: stocks[i].logoUrl,
+      );
     }
 
+    if (stocks.isEmpty) {
+      return getMockStocks();
+    }
     return stocks;
   }
 
@@ -389,23 +361,12 @@ class StockService {
       final batchSymbols = symbolsToFetch.skip(i).take(batchSize).toList();
       debugPrint('\n📦 Procesando lote ${(i ~/ batchSize) + 1}: $batchSymbols');
 
-      for (String symbol in batchSymbols) {
+      Future<Stock?> buildStock(String symbol) async {
         try {
-          debugPrint('📈 Procesando $symbol...');
-
-          // Obtener datos en tiempo real
           final quoteData = await getRealTimeQuote(symbol);
-          if (quoteData == null) {
-            debugPrint(
-                '❌ No se pudieron obtener datos de quote para $symbol, saltando...');
-            continue;
-          }
-
-          // Obtener información fundamental
+          if (quoteData == null) return null;
           final overviewData = await getCompanyOverview(symbol);
-
-          // Crear objeto Stock con datos reales
-          final stock = Stock(
+          return Stock(
             symbol: symbol,
             companyName: overviewData?['companyName'] ?? symbol,
             currentPrice: quoteData['currentPrice'],
@@ -413,7 +374,7 @@ class StockService {
             changePercent: quoteData['changePercent'],
             marketCap: overviewData?['marketCap'] ?? 0.0,
             volume: quoteData['volume'],
-            rank: stocks.length + 1,
+            rank: 0,
             aiAnalysis: _generateAIAnalysis(symbol, overviewData, quoteData),
             recommendation: _generateRecommendation(
               quoteData['changePercent'],
@@ -427,16 +388,34 @@ class StockService {
             dividendYield: overviewData?['dividendYield'] ?? 0.0,
             logoUrl: getLogoUrl(symbol),
           );
-
-          stocks.add(stock);
-          debugPrint(
-              '✅ Stock agregado: ${stock.symbol} - \$${stock.currentPrice}');
-
-          // Pausa para no exceder límites de API
-          await Future.delayed(const Duration(milliseconds: 200));
-        } catch (e) {
-          debugPrint('❌ Error procesando $symbol: $e');
+        } catch (_) {
+          return null;
         }
+      }
+
+      final results = await Future.wait(batchSymbols.map(buildStock));
+      for (final s in results.whereType<Stock>()) {
+        stocks.add(s);
+      }
+      for (int r = 0; r < stocks.length; r++) {
+        final curr = stocks[r];
+        stocks[r] = Stock(
+          symbol: curr.symbol,
+          companyName: curr.companyName,
+          currentPrice: curr.currentPrice,
+          change: curr.change,
+          changePercent: curr.changePercent,
+          marketCap: curr.marketCap,
+          volume: curr.volume,
+          rank: r + 1,
+          aiAnalysis: curr.aiAnalysis,
+          recommendation: curr.recommendation,
+          targetPrice: curr.targetPrice,
+          sector: curr.sector,
+          peRatio: curr.peRatio,
+          dividendYield: curr.dividendYield,
+          logoUrl: curr.logoUrl,
+        );
       }
 
       // Emitir el lote actual
