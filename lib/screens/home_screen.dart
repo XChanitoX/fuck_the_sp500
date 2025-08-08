@@ -4,6 +4,7 @@ import 'ranking_screen.dart';
 import 'bubble_screen.dart';
 import 'portfolio_list_screen.dart';
 import 'chatbot_screen.dart';
+import 'learning_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -202,9 +203,9 @@ class HomeScreen extends StatelessWidget {
           subtitle: 'Desde conceptos básicos hasta análisis avanzado',
           gradient: [Colors.green, Colors.teal],
           onTap: () {
-            // TODO: Implement Learning screen
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Aprendizaje (próximamente)')),
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const LearningScreen()),
             );
           },
         )
