@@ -7,8 +7,6 @@ import '../widgets/stock_card.dart';
 import '../widgets/stock_shimmer.dart';
 import '../config/api_config.dart';
 import 'stock_detail_screen.dart';
-import 'bubble_screen.dart';
-import 'portfolio_list_screen.dart';
 
 class RankingScreen extends StatefulWidget {
   const RankingScreen({super.key});
@@ -154,21 +152,24 @@ class _RankingScreenState extends State<RankingScreen>
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.blue.withOpacity(0.8),
-                      Colors.purple.withOpacity(0.8),
-                    ],
+              // Back to Home
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.2),
+                      width: 1,
+                    ),
                   ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.trending_up,
-                  color: Colors.white,
-                  size: 20,
+                  child: const Icon(
+                    Icons.arrow_back_ios,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -194,52 +195,6 @@ class _RankingScreenState extends State<RankingScreen>
                       ),
                     ),
                   ],
-                ),
-              ),
-              IconButton(
-                onPressed: _refreshStocks,
-                icon: Icon(
-                  isRefreshing ? Icons.refresh : Icons.refresh_outlined,
-                  color: Colors.white.withOpacity(0.8),
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Tooltip(
-                message: 'Vista de burbujas',
-                child: IconButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => BubbleScreen(stocks: stocks),
-                      ),
-                    );
-                  },
-                  icon: Icon(
-                    Icons.bubble_chart_outlined,
-                    color: Colors.white.withOpacity(0.9),
-                    size: 24,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 4),
-              Tooltip(
-                message: 'Portafolios',
-                child: IconButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const PortfolioListScreen(),
-                      ),
-                    );
-                  },
-                  icon: Icon(
-                    Icons.workspaces_outline,
-                    color: Colors.white.withOpacity(0.9),
-                    size: 24,
-                  ),
                 ),
               ),
             ],
@@ -316,59 +271,74 @@ class _RankingScreenState extends State<RankingScreen>
 
   Widget _buildFilterChips() {
     return Container(
-      height: 50,
+      height: 56,
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: filters.length,
-        itemBuilder: (context, index) {
-          final filter = filters[index];
-          final isSelected = selectedFilter == filter;
-
-          return Container(
-            margin: const EdgeInsets.only(right: 12),
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  selectedFilter = filter;
-                });
-              },
-              child: Container(
+      child: SizedBox(
+        height: 40,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: filters.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 10),
+          itemBuilder: (context, index) {
+            final filter = filters[index];
+            final isSelected = selectedFilter == filter;
+            return InkWell(
+              borderRadius: BorderRadius.circular(24),
+              onTap: () => setState(() => selectedFilter = filter),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(25),
+                  borderRadius: BorderRadius.circular(24),
                   gradient: isSelected
-                      ? LinearGradient(
-                          colors: [
-                            Colors.blue.withOpacity(0.8),
-                            Colors.purple.withOpacity(0.8),
-                          ],
-                        )
+                      ? LinearGradient(colors: [
+                          Colors.blueAccent.withOpacity(0.9),
+                          Colors.purpleAccent.withOpacity(0.9),
+                        ])
                       : null,
-                  color: isSelected ? null : Colors.white.withOpacity(0.1),
+                  color: isSelected ? null : Colors.white.withOpacity(0.08),
                   border: Border.all(
                     color: isSelected
                         ? Colors.transparent
-                        : Colors.white.withOpacity(0.2),
+                        : Colors.white.withOpacity(0.18),
                     width: 1,
                   ),
                 ),
-                child: Text(
-                  filter,
-                  style: TextStyle(
-                    color: isSelected
-                        ? Colors.white
-                        : Colors.white.withOpacity(0.8),
-                    fontSize: 13,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                    fontFamily: 'Roboto',
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isSelected ? Icons.check_circle : Icons.circle_outlined,
+                      size: 16,
+                      color: isSelected ? Colors.white : Colors.white70,
+                    ),
+                    const SizedBox(width: 6),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 160),
+                      child: Text(
+                        filter,
+                        style: TextStyle(
+                          color: isSelected
+                              ? Colors.white
+                              : Colors.white.withOpacity(0.85),
+                          fontSize: 13,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.w500,
+                          fontFamily: 'Roboto',
+                          letterSpacing: 0.2,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        softWrap: false,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     ).animate().fadeIn(duration: 800.ms, delay: 200.ms).slideY(
           begin: -0.2,

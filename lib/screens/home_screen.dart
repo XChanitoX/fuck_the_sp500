@@ -81,7 +81,7 @@ class HomeScreen extends StatelessWidget {
           child: _QuickAction(
             icon: Icons.trending_up,
             label: 'Ranking',
-            gradient: [Colors.blueAccent, Colors.purpleAccent],
+            gradient: const [Colors.blueAccent, Colors.purpleAccent],
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const RankingScreen()),
@@ -93,7 +93,7 @@ class HomeScreen extends StatelessWidget {
           child: _QuickAction(
             icon: Icons.bubble_chart_outlined,
             label: 'Burbujas',
-            gradient: [Colors.green, Colors.teal],
+            gradient: const [Colors.green, Colors.teal],
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const BubbleScreen()),
@@ -105,7 +105,7 @@ class HomeScreen extends StatelessWidget {
           child: _QuickAction(
             icon: Icons.workspaces_outline,
             label: 'Portafolios',
-            gradient: [Colors.orange, Colors.redAccent],
+            gradient: const [Colors.orange, Colors.redAccent],
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const PortfolioListScreen()),

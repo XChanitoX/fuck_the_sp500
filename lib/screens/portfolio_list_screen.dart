@@ -67,7 +67,8 @@ class _PortfolioListScreenState extends State<PortfolioListScreen> {
                 createdAt: DateTime.now(),
               );
               await PortfolioService.upsertPortfolio(p);
-              if (mounted) Navigator.pop(ctx);
+              if (ctx.mounted) Navigator.pop(ctx);
+              if (!mounted) return;
               await _load();
             },
             child: const Text('Crear'),

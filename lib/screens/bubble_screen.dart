@@ -334,7 +334,7 @@ class _BubbleScreenState extends State<BubbleScreen>
     );
 
     final diameter = b.radius * 2;
-    final textColor = Colors.white;
+    const textColor = Colors.white;
     final symbolStyle = TextStyle(
       color: textColor,
       fontWeight: FontWeight.bold,
@@ -435,14 +435,13 @@ class _BubbleData {
   final double radius;
   Offset position;
   Offset velocity;
-  bool isDragging;
+  bool isDragging = false;
 
   _BubbleData({
     required this.stock,
     required this.radius,
     required this.position,
     required this.velocity,
-    this.isDragging = false,
   });
 }
 

@@ -139,7 +139,8 @@ class _PortfolioDetailScreenState extends State<PortfolioDetailScreen> {
                 avgPrice: avg,
               );
               await PortfolioService.upsertPosition(pos);
-              if (mounted) Navigator.pop(ctx);
+              if (ctx.mounted) Navigator.pop(ctx);
+              if (!mounted) return;
               await _load();
             },
             child: Text(existing == null ? 'Agregar' : 'Guardar'),
@@ -284,7 +285,7 @@ class _PortfolioDetailScreenState extends State<PortfolioDetailScreen> {
           ElevatedButton(
             onPressed: () async {
               await _deletePosition(p);
-              if (mounted) Navigator.pop(ctx);
+              if (ctx.mounted) Navigator.pop(ctx);
             },
             child: const Text('Eliminar'),
           ),
