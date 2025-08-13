@@ -40,13 +40,9 @@ class StockService {
       final uri = Uri.https(
         'query1.finance.yahoo.com',
         '/v8/finance/chart/$yfSymbol',
-        {
-          'interval': '1d',
-          'range': '1d',
-        },
+        {'interval': '1d', 'range': '1d'},
       );
       assert(() {
-        // ignore: avoid_print
         debugPrint('🔍 Haciendo request a Yahoo Finance: $uri');
         return true;
       }());
@@ -54,7 +50,6 @@ class StockService {
       final response = await http.get(uri);
 
       assert(() {
-        // ignore: avoid_print
         debugPrint('📊 Status code: ${response.statusCode}');
         return true;
       }());
@@ -68,11 +63,12 @@ class StockService {
           final result = data['chart']['result'][0];
           final meta = result['meta'];
           final indicators = result['indicators'];
-          final quote = (indicators != null &&
-                  indicators['quote'] != null &&
-                  indicators['quote'].isNotEmpty)
-              ? indicators['quote'][0]
-              : <String, dynamic>{};
+          final quote =
+              (indicators != null &&
+                      indicators['quote'] != null &&
+                      indicators['quote'].isNotEmpty)
+                  ? indicators['quote'][0]
+                  : <String, dynamic>{};
 
           double toDoubleSafe(dynamic v) {
             if (v == null) return 0.0;
@@ -107,38 +103,39 @@ class StockService {
             'currentPrice': currentPrice,
             'change': change,
             'changePercent': changePercent,
-            'volume': (volumes != null && volumes.isNotEmpty)
-                ? volumes.last.toDouble()
-                : 0.0,
+            'volume':
+                (volumes != null && volumes.isNotEmpty)
+                    ? volumes.last.toDouble()
+                    : 0.0,
             'previousClose': previousClose,
-            'open': (opens != null && opens.isNotEmpty)
-                ? opens.last.toDouble()
-                : 0.0,
-            'high': (highs != null && highs.isNotEmpty)
-                ? highs.last.toDouble()
-                : 0.0,
+            'open':
+                (opens != null && opens.isNotEmpty)
+                    ? opens.last.toDouble()
+                    : 0.0,
+            'high':
+                (highs != null && highs.isNotEmpty)
+                    ? highs.last.toDouble()
+                    : 0.0,
             'low':
                 (lows != null && lows.isNotEmpty) ? lows.last.toDouble() : 0.0,
             'fiftyTwoWeekHigh': toDoubleSafe(meta['fiftyTwoWeekHigh']),
             'fiftyTwoWeekLow': toDoubleSafe(meta['fiftyTwoWeekLow']),
           };
           assert(() {
-            // ignore: avoid_print
             debugPrint(
-                '✅ Datos procesados para $symbol: ${resultData['currentPrice']}');
+              '✅ Datos procesados para $symbol: ${resultData['currentPrice']}',
+            );
             return true;
           }());
           return resultData;
         } else {
           assert(() {
-            // ignore: avoid_print
             debugPrint('❌ No se encontraron datos de quote para $symbol');
             return true;
           }());
         }
       } else {
         assert(() {
-          // ignore: avoid_print
           debugPrint('❌ Error HTTP: ${response.statusCode}');
           return true;
         }());
@@ -146,7 +143,6 @@ class StockService {
       return null;
     } catch (e) {
       assert(() {
-        // ignore: avoid_print
         debugPrint('❌ Error obteniendo datos de $symbol: $e');
         return true;
       }());
@@ -245,15 +241,14 @@ class StockService {
       final data = companyData[symbol];
       if (data != null) {
         assert(() {
-          // ignore: avoid_print
           debugPrint(
-              '✅ Overview procesado para $symbol: ${data['companyName']} - ${data['sector']}');
+            '✅ Overview procesado para $symbol: ${data['companyName']} - ${data['sector']}',
+          );
           return true;
         }());
         return data;
       } else {
         assert(() {
-          // ignore: avoid_print
           debugPrint('❌ No se encontraron datos de overview para $symbol');
           return true;
         }());
@@ -268,7 +263,6 @@ class StockService {
       }
     } catch (e) {
       assert(() {
-        // ignore: avoid_print
         debugPrint('❌ Error obteniendo overview de $symbol: $e');
         return true;
       }());
@@ -355,7 +349,8 @@ class StockService {
     const batchSize = 8;
 
     debugPrint(
-        '🚀 Iniciando carga progresiva de ${symbolsToFetch.length} símbolos');
+      '🚀 Iniciando carga progresiva de ${symbolsToFetch.length} símbolos',
+    );
 
     for (int i = 0; i < symbolsToFetch.length; i += batchSize) {
       final batchSymbols = symbolsToFetch.skip(i).take(batchSize).toList();
@@ -424,12 +419,16 @@ class StockService {
     }
 
     debugPrint(
-        '\n📊 Carga progresiva completada: ${stocks.length} stocks totales');
+      '\n📊 Carga progresiva completada: ${stocks.length} stocks totales',
+    );
   }
 
   // Generar análisis AI basado en datos disponibles
-  static String _generateAIAnalysis(String symbol,
-      Map<String, dynamic>? overviewData, Map<String, dynamic>? quoteData) {
+  static String _generateAIAnalysis(
+    String symbol,
+    Map<String, dynamic>? overviewData,
+    Map<String, dynamic>? quoteData,
+  ) {
     final sector = overviewData?['sector'] ?? 'Tecnología';
     final peRatio = overviewData?['peRatio'] ?? 0.0;
     // final marketCap = overviewData?['marketCap'] ?? 0.0; // No usado por ahora
@@ -471,8 +470,12 @@ class StockService {
   }
 
   // Generar recomendación basada en posición del precio y cambio porcentual
-  static String _generateRecommendation(double changePercent,
-      double currentPrice, double fiftyTwoWeekHigh, double fiftyTwoWeekLow) {
+  static String _generateRecommendation(
+    double changePercent,
+    double currentPrice,
+    double fiftyTwoWeekHigh,
+    double fiftyTwoWeekLow,
+  ) {
     // Calcular la posición relativa del precio actual
     final range = fiftyTwoWeekHigh - fiftyTwoWeekLow;
     final positionFromLow = currentPrice - fiftyTwoWeekLow;

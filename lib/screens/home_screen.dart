@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../router/app_router.dart';
+import '../services/auth_service.dart';
 import 'ranking_screen.dart';
 import 'bubble_screen.dart';
 import 'portfolio_list_screen.dart';
@@ -72,6 +76,25 @@ class HomeScreen extends StatelessWidget {
               fontFamily: 'Roboto',
             ),
           ),
+        ),
+        // Sign out button
+        Builder(
+          builder: (context) {
+            return IconButton(
+              tooltip: 'Cerrar sesión',
+              onPressed: () async {
+                final container = ProviderScope.containerOf(context);
+                final AuthService auth = container.read(authServiceProvider);
+                try {
+                  await auth.signOut();
+                } catch (_) {}
+                // Recalcular estado y navegar a /auth
+                container.invalidate(authStateProvider);
+                if (context.mounted) context.go('/auth');
+              },
+              icon: const Icon(Icons.logout, color: Colors.white70),
+            );
+          },
         ),
       ],
     ).animate().fadeIn(duration: 600.ms).slideY(begin: -0.2, duration: 600.ms);
